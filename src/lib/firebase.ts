@@ -12,24 +12,42 @@ let auth: Auth;
 let defaultDb: Firestore;
 const dbInstances: { [key: string]: Firestore } = {};
 
-if (getApps().length === 0) {
-  if (!firebaseConfig.apiKey) {
-    throw new Error("Missing Firebase API Key. Please check your .env.local file.");
+function initializeFirebase() {
+  if (getApps().length === 0) {
+    if (!firebaseConfig.apiKey) {
+      console.error("Missing Firebase API Key. The app cannot connect to Firebase.");
+      // We don't throw an error here to allow the app to run, but Firebase will not work.
+      // The error will be caught by pages that try to use Firebase services.
+      return; 
+    }
+    app = initializeApp(firebaseConfig);
+  } else {
+    app = getApp();
   }
-  app = initializeApp(firebaseConfig);
-} else {
-  app = getApp();
+  
+  auth = getAuth(app);
+  defaultDb = getFirestore(app);
+  dbInstances['default'] = defaultDb;
 }
 
-auth = getAuth(app);
-defaultDb = getFirestore(app);
-dbInstances['default'] = defaultDb;
+// Initialize Firebase as soon as this module is loaded.
+initializeFirebase();
 
 /**
  * Returns the globally available, initialized Firebase services.
  * @returns An object containing the Firebase app, auth, and default db instance.
  */
 export const getFirebase = () => {
+  if (!app) {
+    // This will happen if the API key was missing.
+    // We re-run initialize in case the env vars have loaded late, but it's unlikely.
+    initializeFirebase();
+    if (!app) {
+       // Still no app, we must return nulls or throw.
+       // For now, let's log an error and subsequent calls will fail.
+       console.error("Firebase could not be initialized. Check your environment variables.");
+    }
+  }
   return { app, auth, defaultDb };
 }
 
@@ -64,6 +82,11 @@ const getDbForRegion = (region: string): Firestore => {
  * @returns A promise that resolves to the user-specific Firestore instance.
  */
 export const getUserDb = async (): Promise<Firestore> => {
+    // Ensure auth is initialized before trying to access currentUser
+    if (!auth) {
+        return defaultDb;
+    }
+
     const currentUser = auth.currentUser;
     if (!currentUser) {
         // Return the default DB if no user is logged in (e.g., for sign-up or public pages)
@@ -86,3 +109,4 @@ export const getUserDb = async (): Promise<Firestore> => {
     // Fallback to the default instance if region is not found or invalid
     return defaultDb;
 };
+
