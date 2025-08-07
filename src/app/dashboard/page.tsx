@@ -1,5 +1,4 @@
 
-      
 "use client";
 
 import { useState, useEffect } from "react";
@@ -134,7 +133,6 @@ export default function DashboardAuthPage() {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        // Use the imported db instance directly
         await setDoc(doc(db, "shops", user.uid), {
           name: shopName,
           region: region,
@@ -383,4 +381,5 @@ export default function DashboardAuthPage() {
     </div>
   );
 }
+    
     
