@@ -7,19 +7,22 @@ import { firebaseConfig, databaseIdMap } from "./firebase-config";
 // --- Singleton Pattern for Firebase Initialization ---
 // This ensures that Firebase is initialized only once and is available synchronously.
 
-let app: FirebaseApp;
-let auth: Auth;
-let defaultDb: Firestore;
+let app: FirebaseApp | null = null;
+let auth: Auth | null = null;
+let defaultDb: Firestore | null = null;
 const dbInstances: { [key: string]: Firestore } = {};
 
 function initializeFirebase() {
+  // Only run initialization if it hasn't been done yet.
+  if (app) return;
+
+  // Check for a valid API key BEFORE initializing. This is the crucial step.
+  if (!firebaseConfig.apiKey) {
+    console.error("Firebase Initialization Failed: Missing API Key. Check your .env.local file.");
+    return; // Stop initialization if the key is missing.
+  }
+  
   if (getApps().length === 0) {
-    if (!firebaseConfig.apiKey) {
-      console.error("Missing Firebase API Key. The app cannot connect to Firebase.");
-      // We don't throw an error here to allow the app to run, but Firebase will not work.
-      // The error will be caught by pages that try to use Firebase services.
-      return; 
-    }
     app = initializeApp(firebaseConfig);
   } else {
     app = getApp();
@@ -35,19 +38,11 @@ initializeFirebase();
 
 /**
  * Returns the globally available, initialized Firebase services.
- * @returns An object containing the Firebase app, auth, and default db instance.
+ * @returns An object containing the Firebase app, auth, and default db instance, or nulls if initialization failed.
  */
 export const getFirebase = () => {
-  if (!app) {
-    // This will happen if the API key was missing.
-    // We re-run initialize in case the env vars have loaded late, but it's unlikely.
-    initializeFirebase();
-    if (!app) {
-       // Still no app, we must return nulls or throw.
-       // For now, let's log an error and subsequent calls will fail.
-       console.error("Firebase could not be initialized. Check your environment variables.");
-    }
-  }
+  // If initialization failed on the first try (e.g., missing key),
+  // the instances will be null.
   return { app, auth, defaultDb };
 }
 
@@ -58,6 +53,11 @@ export const getFirebase = () => {
  * @returns A Firestore instance for the given region.
  */
 const getDbForRegion = (region: string): Firestore => {
+  // If the default DB doesn't exist, something is very wrong.
+  if (!defaultDb || !app) {
+      throw new Error("Default Firebase instance is not available.");
+  }
+
   const databaseId = databaseIdMap[region];
   
   if (!databaseId) {
@@ -82,9 +82,9 @@ const getDbForRegion = (region: string): Firestore => {
  * @returns A promise that resolves to the user-specific Firestore instance.
  */
 export const getUserDb = async (): Promise<Firestore> => {
-    // Ensure auth is initialized before trying to access currentUser
-    if (!auth) {
-        return defaultDb;
+    // Ensure auth and defaultDb are initialized before trying to access them
+    if (!auth || !defaultDb) {
+        throw new Error("Firebase has not been initialized correctly.");
     }
 
     const currentUser = auth.currentUser;
@@ -109,4 +109,3 @@ export const getUserDb = async (): Promise<Firestore> => {
     // Fallback to the default instance if region is not found or invalid
     return defaultDb;
 };
-
