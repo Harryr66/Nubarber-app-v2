@@ -1,0 +1,24 @@
+
+{
+  "hosting": {
+    "source": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "frameworksBackend": {
+      "region": "us-central1",
+      "appId": "nubarber-b99y2"
+    },
+    "rewrites": [
+      {
+        "source": "**",
+        "apphosting": "nubarber-backend"
+      }
+    ]
+  },
+  "firestore": {
+    "rules": "firestore.rules"
+  }
+}
