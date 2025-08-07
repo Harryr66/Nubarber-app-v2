@@ -5,44 +5,49 @@ import { getFirestore, Firestore, doc, getDoc } from "firebase/firestore";
 import { firebaseConfig, databaseIdMap } from "./firebase-config";
 
 // --- Singleton Pattern for Firebase Initialization ---
-// This ensures that Firebase is initialized only once.
+// This ensures that Firebase is initialized only once, and only when the config is valid.
 
-let app: FirebaseApp;
-let auth: Auth;
-let defaultDb: Firestore;
+let app: FirebaseApp | null = null;
+let auth: Auth | null = null;
+let defaultDb: Firestore | null = null;
 const dbInstances: { [key: string]: Firestore } = {};
 
 function initializeFirebase() {
-  if (getApps().length === 0) {
-    // This is the crucial check. Do not initialize if the key is missing.
-    if (!firebaseConfig.apiKey) {
-      console.error("Firebase Initialization Failed: Missing API Key. Check your .env.local file.");
-      return; 
+  // Only initialize if it hasn't been done and the API key is present.
+  if (!getApps().length && firebaseConfig.apiKey) {
+    try {
+        app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        defaultDb = getFirestore(app);
+        dbInstances['default'] = defaultDb;
+    } catch (e) {
+        console.error("Firebase initialization error:", e);
+        // Reset instances if initialization fails
+        app = null;
+        auth = null;
+        defaultDb = null;
     }
-    app = initializeApp(firebaseConfig);
-    auth = getAuth(app);
-    defaultDb = getFirestore(app);
-    dbInstances['default'] = defaultDb;
-  } else {
+  } else if (getApps().length > 0) {
     app = getApp();
     auth = getAuth(app);
     defaultDb = getFirestore(app);
   }
 }
 
-// Initialize immediately.
-initializeFirebase();
-
 /**
  * Returns the globally available, initialized Firebase services.
+ * Throws an error if initialization fails.
  * @returns An object containing the Firebase app, auth, and default db instance.
  */
 export const getFirebase = () => {
-  // If initialization failed (e.g. missing key), the instances might not be set.
-  // We re-run initializeFirebase() to be safe, but it will only truly run once.
   if (!app) {
     initializeFirebase();
   }
+  
+  if (!app || !auth || !defaultDb) {
+      throw new Error("Firebase Initialization Failed: Missing API Key. Check your .env.local file.");
+  }
+  
   return { app, auth, defaultDb };
 }
 
@@ -53,25 +58,20 @@ export const getFirebase = () => {
  * @returns A Firestore instance for the given region.
  */
 const getDbForRegion = (region: string): Firestore => {
-  if (!app) {
-    initializeFirebase();
-    if (!app) { // If it's still not initialized, throw an error.
-      throw new Error("Default Firebase instance is not available after re-initialization attempt.");
-    }
-  }
+  const { app: currentApp, defaultDb: currentDefaultDb } = getFirebase(); // Ensures app is initialized
 
   const databaseId = databaseIdMap[region];
   
   if (!databaseId) {
     console.warn(`No database ID found for region "${region}". Falling back to default DB.`);
-    return defaultDb;
+    return currentDefaultDb;
   }
   
   if (dbInstances[databaseId]) {
     return dbInstances[databaseId];
   }
 
-  const regionalDb = getFirestore(app, databaseId);
+  const regionalDb = getFirestore(currentApp, databaseId);
   dbInstances[databaseId] = regionalDb;
 
   return regionalDb;
@@ -85,10 +85,6 @@ const getDbForRegion = (region: string): Firestore => {
  */
 export const getUserDb = async (): Promise<Firestore> => {
     const { auth: currentAuth, defaultDb: currentDefaultDb } = getFirebase();
-
-    if (!currentAuth || !currentDefaultDb) {
-        throw new Error("Firebase has not been initialized correctly.");
-    }
 
     const currentUser = currentAuth.currentUser;
     if (!currentUser) {
