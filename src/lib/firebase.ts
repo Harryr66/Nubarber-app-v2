@@ -19,11 +19,10 @@ const dbInstances: { [key: string]: Firestore } = {};
  * @returns An object containing the Firebase app, auth, and default db instance.
  */
 export const getFirebase = () => {
-  if (!firebaseConfig.apiKey) {
-      throw new Error("Firebase Initialization Failed: Missing API Key. Check your .env.local file.");
-  }
-
   if (!getApps().length) {
+    if (!firebaseConfig.apiKey) {
+      throw new Error("Firebase Initialization Failed: Missing API Key. Check your .env.local file.");
+    }
     try {
         app = initializeApp(firebaseConfig);
         auth = getAuth(app);
