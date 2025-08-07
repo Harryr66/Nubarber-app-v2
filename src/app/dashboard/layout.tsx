@@ -1,9 +1,10 @@
 
-import { Suspense } from 'react';
+"use client";
+
+import { useState, useEffect, Suspense } from 'react';
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AuthProvider } from "@/hooks/use-auth";
-import { Skeleton } from '@/components/ui/skeleton';
 import { Loader2 } from 'lucide-react';
 
 function DashboardLoading() {
@@ -19,20 +20,28 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   return (
-    <AuthProvider>
       <div>
         <SidebarProvider>
           <DashboardSidebar />
           <SidebarInset>
              <Suspense fallback={<DashboardLoading />}>
                 <div className="p-4 sm:p-6 lg:p-8">
-                  {children}
+                  {isClient ? (
+                     <AuthProvider>
+                       {children}
+                     </AuthProvider>
+                  ) : <DashboardLoading />}
                 </div>
              </Suspense>
           </SidebarInset>
         </SidebarProvider>
       </div>
-    </AuthProvider>
   );
 }
