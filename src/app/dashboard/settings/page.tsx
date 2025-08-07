@@ -44,7 +44,7 @@ function SettingsContent() {
       setGmbConnected(true);
       toast({ title: "Success!", description: "Your Google My Business account has been connected." });
     }
-    if (search_params.get('error')) {
+    if (searchParams.get('error')) {
        toast({ title: "Connection Failed", description: "Could not connect to an external service.", variant: "destructive" });
     }
 
@@ -268,7 +268,7 @@ function SettingsContent() {
 
 export default function SettingsPage() {
   return (
-    <Suspense fallback={<div>Loading Settings...</div>}>
+    <Suspense fallback={<div className="flex w-full h-full justify-center items-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>}>
       <SettingsContent />
     </Suspense>
   )
