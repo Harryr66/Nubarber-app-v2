@@ -27,7 +27,9 @@ function initializeFirebase() {
         auth = null;
         defaultDb = null;
     }
-  } else if (getApps().length > 0) {
+  } else if (getApps().length > 0 && !app) {
+    // This handles the case where the app is initialized on the server first
+    // but our local variables haven't been set yet.
     app = getApp();
     auth = getAuth(app);
     defaultDb = getFirestore(app);
@@ -40,6 +42,8 @@ function initializeFirebase() {
  * @returns An object containing the Firebase app, auth, and default db instance.
  */
 export const getFirebase = () => {
+  // Initialize on every call if not already initialized.
+  // The logic inside initializeFirebase() ensures it only runs once.
   if (!app) {
     initializeFirebase();
   }
