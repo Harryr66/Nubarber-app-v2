@@ -1,12 +1,7 @@
-
-import type {NextConfig} from 'next';
-require('dotenv').config({ path: './.env.local' });
-
-
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   /* config options here */
-  experimental: {
-  },
+  experimental: {},
   // This is required to allow the Next.js dev server to be proxied in the cloud development environment.
   allowedDevOrigins: [
     'https://*.cloudworkstations.dev',
