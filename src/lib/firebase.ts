@@ -4,35 +4,34 @@ import { getAuth, Auth } from "firebase/auth";
 import { getFirestore, Firestore, doc, getDoc } from "firebase/firestore";
 import { firebaseConfig, databaseIdMap } from "./firebase-config";
 
-// This will be our singleton instance
-let firebaseInstance: {
-  app: FirebaseApp;
-  auth: Auth;
-  defaultDb: Firestore;
-  dbInstances: { [key: string]: Firestore };
-} | null = null;
+// --- Singleton Pattern for Firebase Initialization ---
+// This ensures that Firebase is initialized only once and is available synchronously.
 
+let app: FirebaseApp;
+let auth: Auth;
+let defaultDb: Firestore;
+const dbInstances: { [key: string]: Firestore } = {};
 
-/**
- * Initializes Firebase App and services, ensuring it only happens once.
- * @returns An object containing the Firebase app, auth, and db instances.
- */
-export const getFirebase = () => {
-  if (firebaseInstance) {
-    return firebaseInstance;
+if (getApps().length === 0) {
+  if (!firebaseConfig.apiKey) {
+    throw new Error("Missing Firebase API Key. Please check your .env.local file.");
   }
-
-  const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-  const auth = getAuth(app);
-  const defaultDb = getFirestore(app);
-  const dbInstances: { [key: string]: Firestore } = {
-    'default': defaultDb,
-  };
-
-  firebaseInstance = { app, auth, defaultDb, dbInstances };
-  return firebaseInstance;
+  app = initializeApp(firebaseConfig);
+} else {
+  app = getApp();
 }
 
+auth = getAuth(app);
+defaultDb = getFirestore(app);
+dbInstances['default'] = defaultDb;
+
+/**
+ * Returns the globally available, initialized Firebase services.
+ * @returns An object containing the Firebase app, auth, and default db instance.
+ */
+export const getFirebase = () => {
+  return { app, auth, defaultDb };
+}
 
 /**
  * Initializes and returns a Firestore instance for a specific region.
@@ -41,7 +40,6 @@ export const getFirebase = () => {
  * @returns A Firestore instance for the given region.
  */
 const getDbForRegion = (region: string): Firestore => {
-  const { app, defaultDb, dbInstances } = getFirebase();
   const databaseId = databaseIdMap[region];
   
   if (!databaseId) {
@@ -66,8 +64,6 @@ const getDbForRegion = (region: string): Firestore => {
  * @returns A promise that resolves to the user-specific Firestore instance.
  */
 export const getUserDb = async (): Promise<Firestore> => {
-    const { auth, defaultDb } = getFirebase();
-    
     const currentUser = auth.currentUser;
     if (!currentUser) {
         // Return the default DB if no user is logged in (e.g., for sign-up or public pages)
