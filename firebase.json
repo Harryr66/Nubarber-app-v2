@@ -8,7 +8,7 @@
       "**/node_modules/**"
     ],
     "frameworksBackend": {
-      "region": "us-central1",
+      "region": "us-west1",
       "appId": "nubarber-b99y2"
     },
     "rewrites": [
