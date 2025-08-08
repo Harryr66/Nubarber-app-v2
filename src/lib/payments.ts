@@ -19,7 +19,8 @@ interface BookingData {
 
 
 export async function createCheckoutSession(bookingData: BookingData) {
-    const origin = headers().get('origin') || 'http://localhost:9002';
+    const headersList = headers();
+    const origin = headersList.get('origin') || 'http://localhost:9002';
     const { defaultDb } = getFirebase();
     
     try {
@@ -72,7 +73,8 @@ export async function createCheckoutSession(bookingData: BookingData) {
 export async function createStripeConnectAccount(userId: string): Promise<{ url: string | null; error: string | null }> {
     if (!userId) return { url: null, error: "User not authenticated." };
     const { defaultDb } = getFirebase();
-    const origin = headers().get('origin') || 'http://localhost:9002';
+    const headersList = headers();
+    const origin = headersList.get('origin') || 'http://localhost:9002';
 
     try {
         const account = await stripe.accounts.create({
