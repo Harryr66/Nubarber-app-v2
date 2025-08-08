@@ -50,6 +50,11 @@ export default function DashboardAuthPage() {
   const [currency, setCurrency] = useState("USD");
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // Update staff name fields when count changes
   useEffect(() => {
@@ -168,10 +173,10 @@ export default function DashboardAuthPage() {
           title: "Account Created!",
           description: "Welcome! Your shop and staff have been set up.",
         });
-        // The useAuth hook will handle the redirect
+        router.push('/dashboard/overview');
       } else {
         await signInWithEmailAndPassword(auth, email, password);
-        // The useAuth hook will handle the redirect
+        router.push('/dashboard/overview');
       }
 
     } catch (error: any) {
@@ -211,6 +216,14 @@ export default function DashboardAuthPage() {
     }
   };
 
+
+  if (!isClient) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background p-4">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
@@ -393,3 +406,5 @@ export default function DashboardAuthPage() {
     </div>
   );
 }
+
+    
