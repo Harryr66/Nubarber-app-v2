@@ -26,7 +26,7 @@ let db: Firestore;
 export const getFirebase = () => {
   if (!getApps().length) {
     if (!firebaseConfig.apiKey) {
-      throw new Error("Firebase Initialization Failed: Missing API Key. Check your environment variables.");
+      throw new Error("Firebase Initialization Failed: Missing API Key. Check your environment variables and next.config.ts");
     }
     app = initializeApp(firebaseConfig);
     auth = getAuth(app);
