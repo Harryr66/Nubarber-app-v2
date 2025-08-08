@@ -4,61 +4,31 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper function to check if a user is the owner of a shop
+    // Helper function to check if the user is the owner of the shop
     function isShopOwner(userId) {
-      return exists(/databases/$(database)/documents/shops/$(userId));
+      return request.auth.uid == userId;
+    }
+
+    // Rules for the 'shops' collection
+    match /shops/{userId} {
+      // Anyone can read shop details for the booking page
+      allow read: if true;
+      // Only the authenticated owner can create, update, or delete their own shop document
+      allow write: if isShopOwner(userId);
     }
     
-    // Helper function to check if the request is from an authenticated user
-    function isAuthenticated() {
-      return request.auth != null;
+    // Rules for 'services', 'staff', 'clients', 'bookings', 'timeOff' collections
+    // These collections are identified by the shop owner's userId
+    match /{collection}/{docId} {
+       allow read: if resource.data.shopOwnerId == request.auth.uid || resource.data.userId == request.auth.uid;
+       allow write: if request.resource.data.userId == request.auth.uid || request.resource.data.shopOwnerId == request.auth.uid;
     }
 
-    // Shops Collection
-    // - Allow users to create their own shop document upon sign up.
-    // - Allow authenticated users to read shop details for booking purposes.
-    // - Only the shop owner can update their own shop document.
-    match /shops/{userId} {
-      allow read: if isAuthenticated();
-      allow create: if request.auth.uid == userId && request.resource.data.ownerId == userId;
-      allow update: if request.auth.uid == userId;
-      // No one can delete a shop document for safety.
-      allow delete: if false;
-    }
-
-    // Staff Collection
-    // - Only the shop owner can create, update, or delete staff members.
-    // - Any authenticated user can read staff data (for booking).
-    match /staff/{staffId} {
-      allow read: if isAuthenticated();
-      allow create, update, delete: if request.auth.uid == get(/databases/$(database)/documents/shops/$(request.resource.data.userId)).data.ownerId;
-    }
-
-    // Services Collection
-    // - Only the shop owner can manage services.
-    // - Any authenticated user can read services (for booking).
-    match /services/{serviceId} {
-      allow read: if isAuthenticated();
-      allow create, update, delete: if request.auth.uid == get(/databases/$(database)/documents/shops/$(request.resource.data.userId)).data.ownerId;
-    }
-
-    // Bookings Collection
-    // - Any authenticated user can create a booking.
-    // - Only the shop owner can read all bookings for their shop.
-    // - Users can read their own bookings (future use case).
-    // - A booking's status can be updated (e.g., from 'pending' to 'Paid').
+    // Public Booking Rules
+    // Anyone can create a booking, but only the shop owner can read or modify them.
     match /bookings/{bookingId} {
-      allow create: if isAuthenticated();
-      allow read: if isShopOwner(request.auth.uid) && resource.data.shopOwnerId == request.auth.uid;
-      allow update: if isShopOwner(request.auth.uid) && resource.data.shopOwnerId == request.auth.uid;
-      // Disallow deletion of booking records for history.
-      allow delete: if false;
-    }
-
-    // TimeOff Collection
-    // - Only the shop owner can manage time off for their staff.
-    match /timeOff/{timeOffId} {
-        allow read, create, update, delete: if isShopOwner(request.auth.uid) && get(/databases/$(database)/documents/shops/$(request.resource.data.shopOwnerId)).data.ownerId == request.auth.uid;
+      allow create: if true;
+      allow read, update, delete: if isShopOwner(resource.data.shopOwnerId);
     }
   }
 }
