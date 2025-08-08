@@ -23,7 +23,7 @@ let db: Firestore;
  * A robust, simplified function to get Firebase services.
  * This guarantees Firebase is initialized only once.
  */
-export const getFirebase = () => {
+export const getFirebase = async () => {
   if (!getApps().length) {
     if (!firebaseConfig.apiKey) {
       throw new Error("Firebase Initialization Failed: Missing API Key. Check your environment variables and next.config.ts");
@@ -45,6 +45,6 @@ export const getFirebase = () => {
  * The multi-regional complexity has been removed to ensure stability.
  */
 export const getUserDb = async (): Promise<Firestore> => {
-    const { defaultDb } = getFirebase();
+    const { defaultDb } = await getFirebase();
     return defaultDb;
 };
