@@ -1,6 +1,4 @@
 
-'use server';
-
 import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
 import { getAuth, Auth } from "firebase/auth";
 import { getFirestore, Firestore } from "firebase/firestore";
@@ -23,10 +21,10 @@ let db: Firestore;
  * A robust, simplified function to get Firebase services.
  * This guarantees Firebase is initialized only once.
  */
-export const getFirebase = async () => {
+export const getFirebase = () => {
   if (!getApps().length) {
     if (!firebaseConfig.apiKey) {
-      throw new Error("Firebase Initialization Failed: Missing API Key. Check your environment variables and next.config.ts");
+      throw new Error("Firebase Initialization Failed: Missing API Key. Check your environment variables.");
     }
     app = initializeApp(firebaseConfig);
     auth = getAuth(app);
@@ -44,7 +42,7 @@ export const getFirebase = async () => {
  * Returns the single, default Firestore database instance.
  * The multi-regional complexity has been removed to ensure stability.
  */
-export const getUserDb = async (): Promise<Firestore> => {
-    const { defaultDb } = await getFirebase();
+export const getUserDb = (): Firestore => {
+    const { defaultDb } = getFirebase();
     return defaultDb;
 };
