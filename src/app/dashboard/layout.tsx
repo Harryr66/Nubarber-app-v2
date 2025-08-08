@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, Suspense } from 'react';
@@ -26,21 +25,23 @@ export default function DashboardLayout({
     setIsClient(true);
   }, []);
 
+  if (!isClient) {
+    return <DashboardLoading />;
+  }
+
   return (
       <div>
         <SidebarProvider>
-          <DashboardSidebar />
-          <SidebarInset>
-             <Suspense fallback={<DashboardLoading />}>
-                <div className="p-4 sm:p-6 lg:p-8">
-                  {isClient ? (
-                     <AuthProvider>
-                       {children}
-                     </AuthProvider>
-                  ) : <DashboardLoading />}
-                </div>
-             </Suspense>
-          </SidebarInset>
+          <AuthProvider>
+            <DashboardSidebar />
+            <SidebarInset>
+               <Suspense fallback={<DashboardLoading />}>
+                  <div className="p-4 sm:p-6 lg:p-8">
+                    {children}
+                  </div>
+               </Suspense>
+            </SidebarInset>
+          </AuthProvider>
         </SidebarProvider>
       </div>
   );
